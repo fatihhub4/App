@@ -4,7 +4,7 @@ from datetime import datetime
 import io
 
 # --- SAYFA AYARLARI ---
-st.set_page_config(page_title="Parfüm Hesaplayıcı", page_icon="⚗️", layout="mobile")
+st.set_page_config(page_title="Parfüm Hesaplayıcı", page_icon="⚗️", layout="centered")
 
 # --- SABİTLER ---
 DEFAULT_CONFIG = {
@@ -181,4 +181,5 @@ with tab2:
             
             st.success(f"Toplam Maliyet: {f_cost:.2f} TL")
             st.text(f"Esans: {f_ess_g:.2f}g | Su: {f_w_g:.2f}g | Alkol: {f_alc_g:.2f}g")
+
 
