@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 from datetime import datetime
-import os
 
 # --- 1. KONFİGÜRASYON ---
 st.set_page_config(
@@ -12,7 +11,85 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. SESSION STATE (HAFIZA) ---
+# --- 2. DAHİLİ VERİTABANI (Excel Dosyasına Gerek Yok) ---
+# Senin için optimize ettiğim (Su %0, Oranlar Düzenlenmiş) liste burada:
+PERFUME_DB = [
+    {"name": "Abercrombie & Fitch - Fierce E1", "essence_pct": 18, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Acqua Di Parma - Colonia E2", "essence_pct": 15, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Acqua Di Parma - Colonia Leather EDC-C E3", "essence_pct": 18, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Amouage - Beach Hut E5", "essence_pct": 25, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Amouage - Interlude Man E8", "essence_pct": 25, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Amouage - Journey Man E7", "essence_pct": 25, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Amouage - Jubilation XXV E6", "essence_pct": 25, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Amouage - Reflection Man E4", "essence_pct": 25, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Aramis - Devin", "essence_pct": 15, "water_pct": 0, "type": "Eau de Toilette"},
+    {"name": "Armani - Acqua Di Gio Pour Homme E9", "essence_pct": 18, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Armani - Acqua Di Gio Profondo E12", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Armani - Acqua Di Gio Profumo E13", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Armani - Armani Black Code E16", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Armani - Code Profumo E15", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Armani - Stronger With You E10", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Azzaro - Most Wanted E23", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Azzaro - Wanted E22", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Bond No9 - The Scent Of Peace", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Burberry - Hero E29", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Bvlgari - Man In Black E32", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Bvlgari - Tygar Le Gemme E34", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Chanel - Bleu De Chanel E56", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Chanel - Allure Homme Sport E54", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Christian Dior - Sauvage E63", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Christian Dior - Sauvage Elixir E64", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Christian Dior - Dior Homme Intense E60", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Creed - Aventus E67", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Creed - Aventus For Her K75", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Creed - Silver Mountain Water E69", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Diesel - Only The Brave E85", "essence_pct": 18, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Dolce & Gabbana - The One Royal Night E91", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Gucci - Guilty Elixir Him E113", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Hermes - Terre D'Hermes E120", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Initio Parfums Prives - Oud For Greatness", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Jean Paul Gaultier - Le Male Elixir E138", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Jean Paul Gaultier - Ultra Male E135", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Jo Malone - Wood Sage & Sea Salt U56", "essence_pct": 15, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Jo Malone - Lime Basil & Mandarin", "essence_pct": 15, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Killian - Angel's Share U11", "essence_pct": 23, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Killian - Black Phantom U13", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Louis Vuitton - Imagination E155", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Louis Vuitton - Ombre Nomade U62", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Maison Francis Kurkdjian - Baccarat Rouge 540 U69", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Maison Francis Kurkdjian - Baccarat Rouge 540 Extrait U70", "essence_pct": 30, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Maison Francis Kurkdjian - Grand Soir U73", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Mancera - Red Tobacco", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Mancera - Cedrat Boise U77", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Montale - Arabians Tonka U108", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Montale - Intense Cafe U111", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Nasomatto - Black Afgano E166", "essence_pct": 30, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Nishane - Hacivat U130", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Nishane - Ani U131", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Orto Parisi - Megamare U132", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Paco Rabanne - Invictus Victory Elixir E171", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Paco Rabanne - One Million Elixir E177", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Parfums De Marly - Layton U133", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Parfums De Marly - Delina", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Parfums De Marly - Herod", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Prada - Luna Rossa Black", "essence_pct": 18, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Roja - Elysium Pour Homme PC", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Tom Ford - Tobacco Vanille U157", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Tom Ford - Oud Wood U190", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Tom Ford - Lost Cherry U194", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Tom Ford - Tuscan Leather U192", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Versace - Eros Flame", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Versace - Crystal Noir K234", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Xerjoff - Naxos U204", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Xerjoff - Erba Pura U136", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"},
+    {"name": "Xerjoff - Alexandria II U207", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Yves Saint Laurent - Y Le Parfum", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Yves Saint Laurent - Libre Intense K256", "essence_pct": 22, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Yves Saint Laurent - Black Opium K258", "essence_pct": 20, "water_pct": 0, "type": "Eau de Parfum"},
+    {"name": "Tiziana Terenzi - Kirke U143", "essence_pct": 25, "water_pct": 0, "type": "Extrait de Parfum"}
+]
+
+# --- 3. SESSION STATE (HAFIZA) ---
 defaults = {
     "perfume_name": "",
     "target_vol": 100,
@@ -31,13 +108,12 @@ for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# --- 3. SABİT DEĞERLER ---
+# --- 4. SABİT DEĞERLER ---
 FIXED_DENSITY_ALCOHOL = 0.80
 FIXED_DENSITY_WATER = 1.00
 SOURCE_ALCOHOL_DEGREE = 96.6
-DB_FILE = "parfum_veritabani.xlsx" # Veritabanı dosya adı
 
-# --- 4. CSS VE TASARIM ---
+# --- 5. CSS VE TASARIM ---
 st.markdown("""
     <style>
     .block-container {padding-top: 1.5rem; padding-bottom: 5rem;}
@@ -60,7 +136,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* Giriş Kutusu */
     div[data-testid="stTextInput"] input {
         font-weight: bold;
         font-size: 1.1rem;
@@ -71,12 +146,6 @@ st.markdown("""
         border-radius: 8px;
     }
     
-    /* Tablo Stili */
-    div[data-testid="stDataFrame"] {
-        font-size: 0.9rem;
-    }
-
-    /* Şişe */
     .bottle-wrapper {
         display: flex;
         justify-content: center;
@@ -122,16 +191,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. YARDIMCI FONKSİYONLAR ---
-def load_data():
-    if os.path.exists(DB_FILE):
-        try:
-            df = pd.read_excel(DB_FILE)
-            return df
-        except Exception as e:
-            st.error(f"Veritabanı okunurken hata oluştu: {e}")
-            return None
-    return None
+# --- 6. YARDIMCI FONKSİYONLAR ---
+def get_dataframe():
+    return pd.DataFrame(PERFUME_DB)
 
 def create_pdf(vol, mass, data, degree, name_tag):
     pdf = FPDF()
@@ -195,12 +257,11 @@ def render_bottle(e, w, a):
     """
     st.markdown(html, unsafe_allow_html=True)
 
-# --- 6. UYGULAMA AKIŞI ---
+# --- 7. ANA UYGULAMA ---
 
 st.markdown('<div class="main-title">PRO LAB</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">KÜTLESEL HESAPLAYICI</div>', unsafe_allow_html=True)
 
-# 3 Sekmeli Yapı
 tab1, tab2, tab3 = st.tabs(["REÇETE & ORANLAR", "MALİYET HESABI", "📂 VERİTABANI"])
 
 # --- SEKME 1: REÇETE ---
@@ -279,53 +340,36 @@ with tab2:
     st.divider()
     st.metric("TOPLAM SIVI MALİYETİ", f"{total_c:.2f} TL")
 
-# --- SEKME 3: VERİTABANI (YENİ) ---
+# --- SEKME 3: VERİTABANI (DAHİLİ) ---
 with tab3:
-    st.markdown("### 📂 Parfüm Veritabanı")
-    df = load_data()
+    st.markdown("### 📂 Parfüm Veritabanı (Pro Lab)")
+    df = get_dataframe()
     
-    if df is not None:
-        # Arama Çubuğu
-        search_term = st.text_input("🔍 Parfüm Ara", placeholder="Örn: Dior, Chanel, Invictus...")
-        
-        # Filtreleme
-        if search_term:
-            filtered_df = df[df['name'].astype(str).str.contains(search_term, case=False, na=False)]
-        else:
-            filtered_df = df
-            
-        # Tabloyu Göster (Sütun adlarını Türkçeleştirerek)
-        display_df = filtered_df[['name', 'essence_pct', 'water_pct', 'type']].copy()
-        display_df.columns = ['Parfüm Adı', 'Esans %', 'Su %', 'Tip']
-        
-        st.dataframe(
-            display_df, 
-            use_container_width=True,
-            hide_index=True,
-            height=400
-        )
-        
-        st.caption(f"Toplam {len(filtered_df)} kayıt gösteriliyor.")
-        
-        # Seçilen Parfümü Aktarma Özelliği
-        if not filtered_df.empty:
-            st.markdown("---")
-            selected_p = st.selectbox("Reçeteye Aktarılacak Parfümü Seç:", filtered_df['name'].tolist())
-            
-            if st.button("👉 Bu Oranları Kullan"):
-                # Seçilen satırı bul
-                row = filtered_df[filtered_df['name'] == selected_p].iloc[0]
-                
-                # Session State güncelle
-                st.session_state.perfume_name = row['name']
-                st.session_state.essence_pct = float(row['essence_pct'])
-                st.session_state.water_pct = float(row['water_pct'])
-                
-                st.success(f"✅ '{row['name']}' oranları yüklendi! 'REÇETE' sekmesine geçebilirsiniz.")
-                
+    search_term = st.text_input("🔍 Parfüm Ara", placeholder="Örn: Dior, Sauvage, Invictus...")
+    
+    if search_term:
+        filtered_df = df[df['name'].astype(str).str.contains(search_term, case=False, na=False)]
     else:
-        st.info("Veritabanı dosyası (parfum_veritabani.xlsx) henüz yüklenmemiş.")
-        st.markdown("Lütfen Excel dosyanızı projeye dahil edin.")
-
+        filtered_df = df
+        
+    display_df = filtered_df[['name', 'essence_pct', 'water_pct', 'type']].copy()
+    display_df.columns = ['Parfüm Adı', 'Esans %', 'Su %', 'Tip']
+    
+    st.dataframe(display_df, use_container_width=True, hide_index=True, height=400)
+    
+    if not filtered_df.empty:
+        st.markdown("---")
+        st.caption("Seçtiğiniz parfümün oranlarını otomatik olarak 'Reçete' sekmesine aktarır.")
+        
+        selected_p = st.selectbox("Reçeteye Aktarılacak Parfümü Seç:", filtered_df['name'].tolist())
+        
+        if st.button("👉 Bu Oranları Kullan"):
+            row = filtered_df[filtered_df['name'] == selected_p].iloc[0]
+            
+            st.session_state.perfume_name = row['name']
+            st.session_state.essence_pct = float(row['essence_pct'])
+            st.session_state.water_pct = float(row['water_pct'])
+            
+            st.success(f"✅ '{row['name']}' oranları yüklendi! 'REÇETE' sekmesine geçebilirsiniz.")
 
 
